@@ -110,17 +110,18 @@ class MysqlMergeUtil(MergeUtil):
         origin_table_name = '{}.{}'.format(self.origin_db.alias, tb_name_post_fix)
         target_table_name = '{}.{}'.format(self.target_db.alias, tb_name_post_fix)
 
-        stmt = '''insert into {} (id, trade_px, trade_volume,
+        stmt = '''replace into {} (id, trade_px, trade_volume,
                                   b1, b2, b3, b4, b5, a1, a2, a3, a4, a5,
                                   bq1, bq2, bq3, bq4, bq5, aq1, aq2, aq3, aq4,
                                   aq5, order_date_time, trades_date_time, update_type)
-        select * from {}
-        where update_type=2 and {}.trades_date_time != '20000101 00:00:00.000000'
+        select distinct * from {}
+        where {}.trades_date_time != '20000101 00:00:00.000000'
+        and {}.order_date_time != '20000101 00:00:00.000000'
         and {}.trades_date_time not in
-        (select trades_date_time from {} where update_type=2);
+        (select distinct trades_date_time from {});
         '''.format(target_table_name, origin_table_name,
                    origin_table_name, origin_table_name,
-                   target_table_name)
+                   origin_table_name, target_table_name)
         try:
             res = self.db_mgr.session.execute(stmt)
             self.db_mgr.session.commit()
@@ -139,7 +140,7 @@ class MysqlMergeUtil(MergeUtil):
                                   b1,b2,b3,b4,b5,a1,a2,a3,a4,a5,
                                   bq1,bq2,bq3,bq4,bq5,aq1,aq2,aq3,aq4,
                                   aq5,order_date_time,trades_date_time,update_type)
-        select * from {}
+        select distinct * from {}
         where {}.trades_date_time != '20000101 00:00:00.000000'
         and {}.order_date_time != '20000101 00:00:00.000000';
         '''.format(target_table_name, origin_table_name,

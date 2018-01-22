@@ -1,17 +1,22 @@
 import os
 from bitcoinutils.dbmanager import MysqlDatabaseManager, MysqlDB
+from datetime import datetime, timedelta
 import re
 
 
 class MergeUtil(object):
 
-    def __init__(self, db_uri, from_db, to_db, zone_info):
+    def __init__(self, db_uri, from_db, to_db, zone_info, since_date=None):
         super(MergeUtil, self).__init__()
         self.db_uri = db_uri
         self.origin_db = from_db
         self.target_db = to_db
         self.zone_info = zone_info
         self.db_mgr = None
+        if not since_date:
+            self.since_date = (datetime.utcnow().date() - timedelta(2)).strftime('%Y%m%d')
+        else:
+            self.since_date = since_date
 
     def get_stored_instmt_and_coin(self):
         tb_names = self.db_mgr.get_table_names_from_db(self.origin_db)
@@ -77,8 +82,8 @@ class MergeUtil(object):
 
 class MysqlMergeUtil(MergeUtil):
 
-    def __init__(self, db_uri, from_db, to_db, zone_info):
-        super(MysqlMergeUtil, self).__init__(db_uri, from_db, to_db, zone_info)
+    def __init__(self, db_uri, from_db, to_db, zone_info , since_date=None):
+        super(MysqlMergeUtil, self).__init__(db_uri, from_db, to_db, zone_info, since_date)
         self.db_mgr = MysqlDatabaseManager(db_uri, from_db, to_db)
 
     def is_table_need_merge(self, instmt, coin, timestamp):
@@ -174,8 +179,12 @@ class MysqlMergeUtil(MergeUtil):
         for instmt in instmt_coin_table:
             for coin in instmt_coin_table[instmt]:
                 for timestamp in instmt_coin_table[instmt][coin]:
-                    self.create_market_data_table(self.target_db, instmt, coin, timestamp)
-                    if self.zone_info.is_confident(self.origin_db.zone, instmt):
-                        self.merge_confident_table(instmt, coin, timestamp)
-                    else:
-                        self.merge_unconfident_table(instmt, coin, timestamp)
+                    if timestamp >= self.since_date:
+                        print('Merging data table: exch_{}_{}_{}'.format(instmt, coin, timestamp))
+                        if self.db_mgr.is_table_existed(self.target_db,
+                                                        'exch_{}_{}_{}'.format(instmt, coin, timestamp)):
+                            self.create_market_data_table(self.target_db, instmt, coin, timestamp)
+                        if self.zone_info.is_confident(self.origin_db.zone, instmt):
+                            self.merge_confident_table(instmt, coin, timestamp)
+                        else:
+                            self.merge_unconfident_table(instmt, coin, timestamp)

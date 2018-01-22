@@ -22,6 +22,8 @@ if __name__ == '__main__':
                        help='Specify the target database.')
     parser.add_argument('--zoneinfo', action='store',
                        help='InI file which stores confident instruments and coins for different zone.')
+    parser.add_argument('--sincedate', action='store',
+                        help='Since the date then data tables will be merged.')
     args = parser.parse_args()
 
     if not args.primarydb or\
@@ -31,5 +33,6 @@ if __name__ == '__main__':
     pdb = MysqlDB(args.primarydb, args.primarydb, args.primarydbzone)
     tdb = MysqlDB(args.targetdb, args.targetdb, 'HK')
     zp = ConfidentInstmtParser(args.zoneinfo)
-    mutil = MysqlMergeUtil(args.mysqluri, pdb, tdb, zp)
+    since_date = args.sincedate if hasattr(args, 'sincedate') else None
+    mutil = MysqlMergeUtil(args.mysqluri, pdb, tdb, zp, since_date)
     mutil.merge()

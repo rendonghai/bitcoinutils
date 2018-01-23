@@ -31,7 +31,7 @@ if __name__ == '__main__':
         raise ValueError('Error: There should be two databases specified')
 
     pdb = MysqlDB(args.primarydb, args.primarydb, args.primarydbzone)
-    tdb = MysqlDB(args.targetdb, args.targetdb, 'HK')
+    tdb = MysqlDB(args.targetdb, args.targetdb)
     zp = ConfidentInstmtParser(args.zoneinfo)
     since_date = args.sincedate if hasattr(args, 'sincedate') else None
     mutil = MysqlMergeUtil(args.mysqluri, pdb, tdb, zp, since_date)

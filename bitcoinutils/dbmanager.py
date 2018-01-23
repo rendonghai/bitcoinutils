@@ -28,7 +28,7 @@ class SqliteDB(Databas, with_metaclass(FlyweightMeta)):
 
 class MysqlDB(Databas, with_metaclass(FlyweightMeta)):
 
-    def __init__(self, name, alias, zone):
+    def __init__(self, name, alias, zone=None):
         super(MysqlDB, self).__init__()
         self.name = name
         self.alias = alias

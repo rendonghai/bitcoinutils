@@ -121,4 +121,4 @@ class MysqlDatabaseManager(DatabaseManager, with_metaclass(FlyweightMeta)):
 
     def is_table_existed(self, db, table_name):
         tb_names = self.get_table_names_from_db(db)
-        return table_name in tb_names
+        return '{}.{}'.format(db.alias, table_name) in tb_names

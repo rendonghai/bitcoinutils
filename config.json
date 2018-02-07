@@ -1,18 +1,5 @@
 {
-    "rules": [
-        {"exchanges": ["CoinOne", "Okex"],
-         "instmt_code": ["btc", "ltc", "bch"],
-         "volume_threshold": [
-             {"btc" : 0.1},
-             {"ltc" : 0.1}
-         ],
-         "price_gap_threshold":[
-             {"btc": 20},
-             {"ltc": 10}
-         ]
-        }
-    ],
-    "mail": {
+   "mail": {
         "me": "test@163.com",
         "receivers":  ["test@163.com"],
         "smtp_server": "smtp.163.com",

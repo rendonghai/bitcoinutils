@@ -12,6 +12,10 @@ if __name__ == '__main__':
                         help='BitCoin Exchange Handler ZMQ Source')
     parser.add_argument('--config', action='store',
                         help='Configuration File')
+    parser.add_argument('--mysqluri', action='store',
+                        help='Mysql URI')
+    parser.add_argument('--mysqldb', action='store',
+                        help='Mysql Database name')
 
     args = parser.parse_args()
 
@@ -21,7 +25,7 @@ if __name__ == '__main__':
     scheduler.add_job(er.update_exchage_rate, 'interval', hours=1)
 
     thread1 = threading.Thread(target=scheduler.start)
-    monitor = ExchangeDataMonitor(args.feed_uri, args.config_file)
+    monitor = ExchangeDataMonitor(args.zmqsrc, args.mysqluri, args.mysqldb, args.config)
     thread2 = threading.Thread(target=monitor.monitor)
     thread1.start()
     thread2.start()

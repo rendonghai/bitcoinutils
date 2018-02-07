@@ -12,11 +12,6 @@ class MailNotification(object):
         self.me = me
         self.pwd = pwd
         self.recivers = recivers
-        self.smtp_server.login(me, pwd)
-
-
-    def __del__(self):
-        self.smtp_server.close()
 
     def send_notification(self, subject, content):
 
@@ -26,9 +21,12 @@ class MailNotification(object):
         msg['To'] = ';'.join(self.recivers)
 
         try:
+            self.smtp_server.login(me, pwd)
             self.smtp_server.sendmail(self.me, msg['To'], msg.as_string())
         except Exception as e:
             print(e)
+        finally:
+            self.smtp_server.close()
 
 
 if __name__ == '__main__':

@@ -181,8 +181,8 @@ class MysqlMergeUtil(MergeUtil):
                 for timestamp in instmt_coin_table[instmt][coin]:
                     if timestamp >= self.since_date:
                         print('Merging data table: exch_{}_{}_{}'.format(instmt, coin, timestamp))
-                        if self.db_mgr.is_table_existed(self.target_db,
-                                                        'exch_{}_{}_{}'.format(instmt, coin, timestamp)):
+                        if not self.db_mgr.is_table_existed(self.target_db,
+                                                            'exch_{}_{}_{}'.format(instmt, coin, timestamp)):
                             self.create_market_data_table(self.target_db, instmt, coin, timestamp)
                         if self.zone_info.is_confident(self.origin_db.zone, instmt):
                             self.merge_confident_table(instmt, coin, timestamp)

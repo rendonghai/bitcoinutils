@@ -265,8 +265,8 @@ class ExchangeDataMonitor(object):
 
         for snap in self.pinned_snapshots:
             for item in snap:
-                if item[1] in coin and (exchange, coin) in snap:
-                    snap[(exchange, coin)].update_snapshot(price, volume)
+                if item[1] in coin and (exchange, item[1]) in snap:
+                    snap[(exchange, item[1])].update_snapshot(price, volume)
 
     def check_price_difference(self):
 
@@ -288,8 +288,8 @@ class ExchangeDataMonitor(object):
                     price2 = item[(exch2, coin)].price
             if price1 !=0 and price2 !=0:
                 price_diff = price1 - price2
-                print(price_diff)
                 price_diff_percent = price_diff / min(price1, price2) * 100.0
+                print(price_diff, price_diff_percent)
                 if ( price_diff > 0 and price_gap_threshold > 0 and price_diff_percent > price_gap_threshold ) or \
                    ( price_diff < 0 and price_gap_threshold < 0 and price_diff_percent < price_gap_threshold ):
                     over_threshold_data.append((key, exch1, exch2, coin, price1, price2, price_diff))

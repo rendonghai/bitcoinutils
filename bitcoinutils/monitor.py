@@ -287,9 +287,11 @@ class ExchangeDataMonitor(object):
                 if (exch2, coin) in item.keys():
                     price2 = item[(exch2, coin)].price
             if price1 !=0 and price2 !=0:
-                price_diff = abs(price1 - price2)
+                price_diff = price1 - price2
                 print(price_diff)
-                if price_diff / min(price1, price2) * 100.0 > price_gap_threshold:
+                price_diff_percent = price_diff / min(price1, price2) * 100.0
+                if ( price_diff > 0 and price_diff_percent > price_gap_threshold ) or \
+                   ( price_diff < 0 and price_diff_percent < price_gap_threshold ):
                     over_threshold_data.append((key, exch1, exch2, coin, price1, price2, price_diff))
 
         return over_threshold_data

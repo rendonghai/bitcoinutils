@@ -45,7 +45,7 @@ class ExchangeFactory(with_metaclass(FlyweightMeta)):
         elif kw['exchange'] == 'CoinOne':
             exch = CoinOne('CoinOne')
         else:
-            exch = Exchange()
+            exch = Exchange(name=kw['exchange'])
         return exch
 
 

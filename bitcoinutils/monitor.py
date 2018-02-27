@@ -290,8 +290,8 @@ class ExchangeDataMonitor(object):
                 price_diff = price1 - price2
                 print(price_diff)
                 price_diff_percent = price_diff / min(price1, price2) * 100.0
-                if ( price_diff > 0 and price_diff_percent > price_gap_threshold ) or \
-                   ( price_diff < 0 and price_diff_percent < price_gap_threshold ):
+                if ( price_diff > 0 and price_gap_threshold > 0 and price_diff_percent > price_gap_threshold ) or \
+                   ( price_diff < 0 and price_gap_threshold < 0 and price_diff_percent < price_gap_threshold ):
                     over_threshold_data.append((key, exch1, exch2, coin, price1, price2, price_diff))
 
         return over_threshold_data

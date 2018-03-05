@@ -19,13 +19,14 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    monitor = ExchangeDataMonitor(args.zmqsrc, args.mysqluri, args.mysqldb, args.config)
     er = ExchangeRate()
 
     scheduler = BlockingScheduler()
-    scheduler.add_job(er.update_exchage_rate, 'interval', hours=1)
+    scheduler.add_job(er.update_exchage_rate, 'interval', hours=12)
+    scheduler.add_job(monitor.config.fetch_rules, 'interval', minute=5)
 
     thread1 = threading.Thread(target=scheduler.start)
-    monitor = ExchangeDataMonitor(args.zmqsrc, args.mysqluri, args.mysqldb, args.config)
     thread2 = threading.Thread(target=monitor.monitor)
     thread1.start()
     thread2.start()

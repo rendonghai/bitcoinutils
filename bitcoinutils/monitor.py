@@ -66,8 +66,32 @@ class ExchangeRate(with_metaclass(FlyweightMeta)):
         self.eur = None
         self.krw = None
 
+        self.config = config
         self.lock = threading.Lock()
-        self.update_exchage_rate()
+        self.exchange_rate_table_name = 'exchange_rate'
+        #self.update_exchage_rate()
+
+    def set_config(config):
+        self.config = config
+
+    def initialize_exchange_rate_table(self):
+
+        stmt = '''
+        CREATE TABLE IF NOT EXISTS  {}.{}
+        (date_time varchar(25), cny decimal(20, 8),
+         jpy decimal(20, 8), eur decimal(20, 8),
+         krw decimal(20, 8), primary key (date_time)
+        );
+        '''.format(self.config.mysql_db.alias, self.exchange_rate_table_name)
+
+        if not self.config.db_mrg.is_table_existed(self.config.mysql_db,
+                                                   self.exchange_rate_table_name):
+            try:
+                self.config.db_mgr.session.execute(stmt)
+                self.config.db_mgr.session.commit()
+            except Exception as e:
+                print(e)
+                self.config.db_mgr.session.rollback()
 
     def update_exchage_rate(self):
 
@@ -78,6 +102,17 @@ class ExchangeRate(with_metaclass(FlyweightMeta)):
 
                 for item in ExchangeRate.supported_currency:
                     setattr(self, item.lower(), res['rates'][item])
+
+                if not self.config:
+                    raise ValueError
+
+                date = datetime.utcnow().date().strftime("%Y%m%d")
+                stmt = '''replace into {} (date_time, cny, jpy, eur, krw)
+                values ({} {} {} {} {})
+                '''.format(self.exchange_rate_table_name, date,
+                           self.cny, self.jpy, self.eur, self.krw)
+                self.config.db_mgr.session.execute(stmt)
+                self.config.db_mgr.session.commit()
             except Exception as e:
                 print(e)
             finally:
@@ -150,21 +185,26 @@ class MonitorConfig(with_metaclass(FlyweightMeta)):
         stmt = '''
         CREATE TABLE IF NOT EXISTS  {}.{}
         ( id int not null AUTO_INCREMENT, exch1 varchar(25), exch2 varchar(25),
-        currency varchar(25), price_diff_threshold decimal(20, 8),
+        currency varchar(25), price_diff_threshold decimal(20, 8), direction varchar(25),
         succeeded_rule_id varchar(128),
         status varchar(16),
         primary key (id)
         );
         '''.format(self.mysql_db.alias, self.rule_table_name)
         if not self.db_mgr.is_table_existed(self.mysql_db, self.rule_table_name):
-            self.db_mgr.session.execute(stmt)
+            try:
+                self.db_mgr.session.execute(stmt)
+                self.db_mgr.session.commit()
+            except Exception as e:
+                print(e)
+                self.db_mgr.session.rollback()
 
         self.fetch_rules()
 
     def fetch_rules(self):
 
         stmt = '''
-        select id, exch1, exch2, currency, price_diff_threshold
+        select id, exch1, exch2, currency, price_diff_threshold, direction
         from {}.{} where status = 'active';
         '''.format(self.mysql_db.alias, self.rule_table_name)
 
@@ -243,6 +283,10 @@ class ExchangeDataMonitor(object):
                                                mail_config['mail_pwd'],
                                                mail_config['receivers'])
 
+        er = ExchangeRate()
+        er.set_config(self.config)
+        er.update_exchage_rate()
+
         self.pinned_snapshots = []
 
         for rule in self.config.rules.values():
@@ -278,6 +322,7 @@ class ExchangeDataMonitor(object):
             exch2 = rule[1]
             coin = rule[2]
             price_gap_threshold = rule[3]
+            direction = rule[4]
             print(exch1, exch2, coin, price_gap_threshold)
             price1 = 0
             price2 = 0
@@ -290,8 +335,8 @@ class ExchangeDataMonitor(object):
                 price_diff = price1 - price2
                 price_diff_percent = price_diff / min(price1, price2) * 100.0
                 print(price_diff, price_diff_percent)
-                if ( price_diff > 0 and price_gap_threshold > 0 and price_diff_percent > price_gap_threshold ) or \
-                   ( price_diff < 0 and price_gap_threshold < 0 and price_diff_percent < price_gap_threshold ):
+                if direction.lower() == 'up' and price_diff_percent >= price_gap_threshold or \
+                   direction.lower() == 'down' and price_diff_percent < price_gap_threshold:
                     over_threshold_data.append((key, exch1, exch2, coin, price1, price2, price_diff))
 
         return over_threshold_data

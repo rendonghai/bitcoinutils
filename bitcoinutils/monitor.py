@@ -9,6 +9,7 @@ from bitcoinutils.utils import with_metaclass, FlyweightMeta
 from bitcoinutils.notification import MailNotification
 from bitcoinutils.dbmanager import MysqlDatabaseManager, MysqlDB
 import threading
+from datetime import datetime
 
 class Exchange(with_metaclass(FlyweightMeta)):
 
@@ -66,12 +67,12 @@ class ExchangeRate(with_metaclass(FlyweightMeta)):
         self.eur = None
         self.krw = None
 
-        self.config = config
+        self.config = None
         self.lock = threading.Lock()
         self.exchange_rate_table_name = 'exchange_rate'
         #self.update_exchage_rate()
 
-    def set_config(config):
+    def set_config(self, config):
         self.config = config
 
     def initialize_exchange_rate_table(self):
@@ -84,7 +85,7 @@ class ExchangeRate(with_metaclass(FlyweightMeta)):
         );
         '''.format(self.config.mysql_db.alias, self.exchange_rate_table_name)
 
-        if not self.config.db_mrg.is_table_existed(self.config.mysql_db,
+        if not self.config.db_mgr.is_table_existed(self.config.mysql_db,
                                                    self.exchange_rate_table_name):
             try:
                 self.config.db_mgr.session.execute(stmt)
@@ -107,9 +108,10 @@ class ExchangeRate(with_metaclass(FlyweightMeta)):
                     raise ValueError
 
                 date = datetime.utcnow().date().strftime("%Y%m%d")
-                stmt = '''replace into {} (date_time, cny, jpy, eur, krw)
-                values ({} {} {} {} {})
-                '''.format(self.exchange_rate_table_name, date,
+                stmt = '''replace into {}.{} (date_time, cny, jpy, eur, krw)
+                values ('{}', {}, {}, {}, {});
+                '''.format(self.config.mysql_db.alias,
+                           self.exchange_rate_table_name, date,
                            self.cny, self.jpy, self.eur, self.krw)
                 self.config.db_mgr.session.execute(stmt)
                 self.config.db_mgr.session.commit()
@@ -121,6 +123,7 @@ class ExchangeRate(with_metaclass(FlyweightMeta)):
     def __str__(self):
         return ' '.join(['{}:{}'.format(x, getattr(self, x.lower())) for x in self.supported_currency])
 
+exchange_rate = ExchangeRate()
 
 class BCEXSnapshot(object):
 
@@ -132,8 +135,7 @@ class BCEXSnapshot(object):
         self.price = self.consistent_currency_by_usd(float(price))
 
     def consistent_currency_by_usd(self, price):
-        er = ExchangeRate()
-
+        er = exchange_rate
         base_currency = self.exchange.get_base_currency()
         coin_currency = re.split('_|-', self.currency)
         if len(coin_currency) > 1:
@@ -142,7 +144,7 @@ class BCEXSnapshot(object):
         else:
             for item in er.supported_currency:
                 if item.lower() in coin_currency:
-                    return price / float(getattr(er, item.lower()))
+                    return price / float(getattr(exchange_rate, item.lower()))
             else:
                 return price / float(getattr(er, base_currency))
 
@@ -283,12 +285,15 @@ class ExchangeDataMonitor(object):
                                                mail_config['mail_pwd'],
                                                mail_config['receivers'])
 
-        er = ExchangeRate()
+        #er = ExchangeRate()
+        er = exchange_rate
         er.set_config(self.config)
+        er.initialize_exchange_rate_table()
         er.update_exchage_rate()
 
         self.pinned_snapshots = []
 
+        print ('init rule content')
         for rule in self.config.rules.values():
             item = {}
             exch1 = rule[0]
@@ -350,6 +355,8 @@ class ExchangeDataMonitor(object):
 
         print('Start receiving exchange data...')
         self.print_pinned_snapshots()
+        #er = ExchangeRate()
+        er = exchange_rate
         while True:
             ret = self.sock.recv()
             res = json.loads(ret.decode('UTF-8'))
@@ -378,7 +385,8 @@ class ExchangeDataMonitor(object):
                     for item in over_threshold:
                         content += str(item)
                         content += '\n'
-                    #print(subject, content)
+                    print('Trigger Mail Notification')
+                    print(subject, content)
                     self.mail_notifier.send_notification(subject, content)
                 else:
                     pass

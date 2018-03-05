@@ -2,8 +2,9 @@
 
 import argparse
 from apscheduler.schedulers.blocking import BlockingScheduler
-from bitcoinutils.monitor import ExchangeRate, ExchangeDataMonitor
+from bitcoinutils.monitor import ExchangeRate, ExchangeDataMonitor, exchange_rate
 import threading, time
+from datetime import datetime
 
 if __name__ == '__main__':
 
@@ -20,11 +21,11 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     monitor = ExchangeDataMonitor(args.zmqsrc, args.mysqluri, args.mysqldb, args.config)
-    er = ExchangeRate()
-
     scheduler = BlockingScheduler()
+    #er = ExchangeRate()
+    er = exchange_rate
     scheduler.add_job(er.update_exchage_rate, 'interval', hours=12)
-    scheduler.add_job(monitor.config.fetch_rules, 'interval', minute=5)
+    scheduler.add_job(monitor.config.fetch_rules, 'interval', minutes=5)
 
     thread1 = threading.Thread(target=scheduler.start)
     thread2 = threading.Thread(target=monitor.monitor)

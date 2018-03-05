@@ -1,8 +1,9 @@
 {
    "mail": {
-        "me": "test@163.com",
-        "receivers":  ["test@163.com"],
-        "smtp_server": "smtp.163.com",
-        "mail_pwd":  "test"
+        "me": "notice@hkhongyi.net",
+        "receivers":  ["rdh_wx@163.com"],
+        "smtp_server": "smtp.mxhichina.com",
+        "mail_pwd":  "Rdh11223344@"
     }
 }
+

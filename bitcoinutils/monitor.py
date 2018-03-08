@@ -342,7 +342,7 @@ class ExchangeDataMonitor(object):
                 print(price_diff, price_diff_percent)
                 if direction.lower() == 'up' and price_diff_percent >= price_gap_threshold or \
                    direction.lower() == 'down' and price_diff_percent < price_gap_threshold:
-                    over_threshold_data.append((key, exch1, exch2, coin, price1, price2, price_diff))
+                    over_threshold_data.append((key, exch1, exch2, coin, price1, price2, price_diff, '{}%'.format(price_diff_percent)))
 
         return over_threshold_data
 
@@ -373,8 +373,6 @@ class ExchangeDataMonitor(object):
                 if over_threshold:
                     for item in over_threshold:
                         key = item[0]
-                        print('X'*100)
-                        print(key)
                         self.config.deactive_rule(key)
                         ids = self.config.get_succeeded_rule_ids(key)
                         if ids:

@@ -8,7 +8,7 @@ from email.mime.text import MIMEText
 class MailNotification(object):
 
     def __init__(self, server, me, pwd, recivers):
-        self.smtp_server = smtplib.SMTP(server)
+        self.server = server
         self.me = me
         self.pwd = pwd
         self.recivers = recivers
@@ -18,17 +18,24 @@ class MailNotification(object):
         msg = MIMEText(content, _subtype='plain')
         msg['Subject'] = subject
         msg['From'] = self.me
-        msg['To'] = ';'.join(self.recivers)
+        msg['To'] = ', '.join(self.recivers)
 
+        smtp_server = smtplib.SMTP(self.server)
         try:
-            self.smtp_server.login(me, pwd)
-            self.smtp_server.sendmail(self.me, msg['To'], msg.as_string())
+            smtp_server.login(self.me, self.pwd)
+            smtp_server.sendmail(self.me, self.recivers, msg.as_string())
         except Exception as e:
             print(e)
         finally:
-            self.smtp_server.close()
+            smtp_server.close()
 
 
 if __name__ == '__main__':
 
+    notifier = MailNotification('smtp.mxhichina.com' , 'notice@hkhongyi.net', 'Rdh11223344@', ['rdh_wx@163.com', 'wxjeacen@gmail.com'])
+    #notifier = MailNotification('smtp.mxhichina.com' , 'notice@hkhongyi.net', 'Rdh11223344@', ['wxjeacen@gmail.com'])
+    notifier.send_notification('This is a test', 'Test ok')
+    import time
+    time.sleep(5)
+    notifier.send_notification('This is a second test', 'Test ok')
     pass

@@ -22,7 +22,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    monitor = ExchangeDataMonitor(args.zmqsrc, args.mysqluri, args.mysqldb, args.config, args.hittimes)
+    monitor = ExchangeDataMonitor(args.zmqsrc, args.mysqluri, args.mysqldb, args.config, int(args.hittimes))
     scheduler = BlockingScheduler()
     #er = ExchangeRate()
     er = exchange_rate

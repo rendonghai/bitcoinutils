@@ -17,10 +17,12 @@ if __name__ == '__main__':
                         help='Mysql URI')
     parser.add_argument('--mysqldb', action='store',
                         help='Mysql Database name')
+    parser.add_argument('--hittimes', action='store',
+                        help='Max rule hit times')
 
     args = parser.parse_args()
 
-    monitor = ExchangeDataMonitor(args.zmqsrc, args.mysqluri, args.mysqldb, args.config)
+    monitor = ExchangeDataMonitor(args.zmqsrc, args.mysqluri, args.mysqldb, args.config, args.hittimes)
     scheduler = BlockingScheduler()
     #er = ExchangeRate()
     er = exchange_rate

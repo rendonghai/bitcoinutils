@@ -1,4 +1,4 @@
-#
+#coding:utf-8
 import requests
 import time
 import threading
@@ -219,6 +219,7 @@ class MonitorConfig(with_metaclass(FlyweightMeta)):
             self.rules = {}
             for item in res:
                 self.rules[item[0]] = item[1:]
+                self.rules[item[0]].append(0)
         except Exception as e:
             print(e)
         finally:
@@ -274,10 +275,11 @@ class MonitorConfig(with_metaclass(FlyweightMeta)):
 
 class ExchangeDataMonitor(object):
 
-    def __init__(self, feed_uri, mysql_uri, mysql_db, config_file):
+    def __init__(self, feed_uri, mysql_uri, mysql_db, config_file, hit_times):
         self.feed_uri = feed_uri
         self.config = MonitorConfig()
         self.config.load_config(mysql_uri, mysql_db, config_file)
+        self.hit_times = hit_times
         mail_config = self.config.mail_config
 
         self.mail_notifier =  MailNotification(mail_config['smtp_server'],
@@ -317,7 +319,7 @@ class ExchangeDataMonitor(object):
                 if item[1] in coin and (exchange, item[1]) in snap:
                     snap[(exchange, item[1])].update_snapshot(price, volume)
 
-    def check_price_difference(self):
+    def check_price_difference(self, exchange, coin_code):
 
         over_threshold_data = []
 
@@ -336,13 +338,20 @@ class ExchangeDataMonitor(object):
                     price1 = item[(exch1, coin)].price
                 if (exch2, coin) in item.keys():
                     price2 = item[(exch2, coin)].price
-            if price1 !=0 and price2 !=0:
+            if price1 !=0 and price2 !=0 and \
+               exchange.lower() in [exch1.lower(), exch2.lower()] and \
+               coin.lower() in coin_code.lower():
                 price_diff = price1 - price2
                 price_diff_percent = price_diff / min(price1, price2) * 100.0
                 print(price_diff, price_diff_percent)
                 if direction.lower() == 'up' and price_diff_percent >= price_gap_threshold or \
                    direction.lower() == 'down' and price_diff_percent < price_gap_threshold:
-                    over_threshold_data.append((key, exch1, exch2, coin, price1, price2, price_diff, '{}%'.format(price_diff_percent)))
+                    self.config.rules[key][-1] += 1
+                    if self.config.rules[key][-1] >= self.hit_times:
+                        over_threshold_data.append((key, exch1, exch2, coin, price1, price2, price_diff, '{}%'.format(price_diff_percent)))
+                        self.config.rules[key][-1] = 0
+                else:
+                    self.config.rules[key][-1] = 0
 
         return over_threshold_data
 
@@ -369,7 +378,7 @@ class ExchangeDataMonitor(object):
                 print(exch, coin, price, volume)
                 self.update_snapshot(exch, coin.lower(), price, volume)
                 self.print_pinned_snapshots()
-                over_threshold = self.check_price_difference()
+                over_threshold = self.check_price_difference(exch, coin)
                 if over_threshold:
                     for item in over_threshold:
                         key = item[0]
@@ -378,11 +387,21 @@ class ExchangeDataMonitor(object):
                         if ids:
                             for sk in ids:
                                 self.config.active_rule(sk)
-                    subject = 'Price Threshold Triggered'
+                    subject = u'交易所差价提醒'
                     content = ''
                     for item in over_threshold:
-                        content += str(item)
-                        content += '\n'
+                        #content += str(item)
+                        #content += '\n'
+                        content =+ u'''
+                        货币: {}
+                        交易所1: {}\t{}
+                        交易所2: {}\t{}
+                        交易差价: {}\t{}
+                        '''.format(item[3],
+                                   item[1], round(item[4],2),
+                                   item[2], round(item[5],2),
+                                   round(item[6],2), round(item[7],2)
+                        )
                     print('Trigger Mail Notification')
                     print(subject, content)
                     self.mail_notifier.send_notification(subject, content)

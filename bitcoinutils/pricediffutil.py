@@ -111,7 +111,7 @@ class PriceDiffUtil(object):
                                                                 self.date)
 
         stmt = '''create table if not exists {}.{}
-        (timestamp varchar(25) primary key, price_diff decimal(20, 8));'''
+        (timestamp varchar(25) primary key, price_diff decimal(20, 8), price_diff_percent decimal(20, 8));'''
         if not self.db_mgr.is_table_existed(self.target_db,
                                             self.price_diff_table):
             self.db_mgr.session.execute(stmt.format(self.target_db.alias, self.price_diff_table))
@@ -200,11 +200,13 @@ class PriceDiffUtil(object):
             consistent_currency2 = self.consistent_currency_by_usd(exch2, coin2, price2, self.exchange_rate)
 
             price_diff = consistent_currency1 - consistent_currency2
+            price_diff_percent = price_diff / min(consistent_currency1, consistent_currency2) * 100.0
 
-            stmt = '''replace into {}.{} (timestamp, price_diff) values('{}',{})
+            stmt = '''replace into {}.{} (timestamp, price_diff, price_diff_percent) values('{}',{},{})
             '''.format(self.target_db.alias, self.price_diff_table,
                        begin_time.strftime('%Y%m%d %H:%M:%S.%f'),
-                       price_diff)
+                       price_diff,
+                       price_diff_percent)
 
             try:
                 print(stmt)

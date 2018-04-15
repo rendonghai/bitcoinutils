@@ -36,6 +36,11 @@ class CoinOne(Exchange):
         super(CoinOne, self).__init__(name)
         self.base_currency = 'krw'
 
+class Bithumb(Exchange):
+
+    def __init__(self, name):
+        super(Bithumb, self).__init__(name)
+        self.base_currency = 'krw'
 
 class ExchangeFactory(with_metaclass(FlyweightMeta)):
 
@@ -45,6 +50,8 @@ class ExchangeFactory(with_metaclass(FlyweightMeta)):
             exch = Okex('Okex')
         elif kw['exchange'] == 'CoinOne':
             exch = CoinOne('CoinOne')
+        elif kw['exchange'] == 'Bithumb':
+            exch = Bithumb('Bithumb')            
         else:
             exch = Exchange(name=kw['exchange'])
         return exch
@@ -212,16 +219,20 @@ class MonitorConfig(with_metaclass(FlyweightMeta)):
 
         try:
             self.lock.acquire()
+            print('Fetching Rules')
+            self.db_mgr.session.execute('flush table {}.{}'.format(self.mysql_db.alias, self.rule_table_name))
+            self.db_mgr.session.commit()
             res = self.db_mgr.session.execute(stmt)
             if self.rules:
                 del self.rules
 
             self.rules = {}
             for item in res:
-                self.rules[item[0]] = item[1:]
-                self.rules[item[0]].append(0)
+                self.rules[item[0]] = list(item[1:])
+            print(self.rules)
         except Exception as e:
             print(e)
+            self.db_mgr.session.rollback()
         finally:
             self.lock.release()
 
@@ -280,6 +291,7 @@ class ExchangeDataMonitor(object):
         self.config = MonitorConfig()
         self.config.load_config(mysql_uri, mysql_db, config_file)
         self.hit_times = hit_times
+        self.rule_hit_map = {}
         mail_config = self.config.mail_config
 
         self.mail_notifier =  MailNotification(mail_config['smtp_server'],
@@ -343,15 +355,24 @@ class ExchangeDataMonitor(object):
                coin.lower() in coin_code.lower():
                 price_diff = price1 - price2
                 price_diff_percent = price_diff / min(price1, price2) * 100.0
+                print('F'*100)
+                print('Hit rule {}'.format(key))
                 print(price_diff, price_diff_percent)
+                if key not in self.rule_hit_map:
+                    self.rule_hit_map[key] = 0
+                print('Checking rule:{}'.format(key))
+                print(self.config.rules[key])
+                print('Hit count {}'.format(self.rule_hit_map[key]))
                 if direction.lower() == 'up' and price_diff_percent >= price_gap_threshold or \
                    direction.lower() == 'down' and price_diff_percent < price_gap_threshold:
-                    self.config.rules[key][-1] += 1
-                    if self.config.rules[key][-1] >= self.hit_times:
-                        over_threshold_data.append((key, exch1, exch2, coin, price1, price2, price_diff, '{}%'.format(price_diff_percent)))
-                        self.config.rules[key][-1] = 0
+                    #self.config.rules[key][-1] += 1
+                    self.rule_hit_map[key] += 1
+                    if self.rule_hit_map[key] >= self.hit_times:
+                        over_threshold_data.append((key, exch1, exch2, coin, price1, price2, price_diff, price_diff_percent))
+                        self.rule_hit_map[key] = 0
                 else:
-                    self.config.rules[key][-1] = 0
+                    print('Unset hit count in rule {}'.format(key))
+                    self.rule_hit_map[key] = 0
 
         return over_threshold_data
 
@@ -388,16 +409,11 @@ class ExchangeDataMonitor(object):
                             for sk in ids:
                                 self.config.active_rule(sk)
                     subject = u'交易所差价提醒'
-                    content = ''
+                    content = u''
                     for item in over_threshold:
                         #content += str(item)
                         #content += '\n'
-                        content =+ u'''
-                        货币: {}
-                        交易所1: {}\t{}
-                        交易所2: {}\t{}
-                        交易差价: {}\t{}
-                        '''.format(item[3],
+                        content += u'''货币: {}\n交易所1: {}\t{}\n交易所2: {}\t{}\n交易差价: {}\t{}%\n'''.format(item[3],
                                    item[1], round(item[4],2),
                                    item[2], round(item[5],2),
                                    round(item[6],2), round(item[7],2)

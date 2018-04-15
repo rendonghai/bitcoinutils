@@ -1,7 +1,7 @@
 {
    "mail": {
         "me": "notice@hkhongyi.net",
-        "receivers":  ["rdh_wx@163.com"],
+        "receivers":  ["rdh_wx@163.com", "wxjeacen@gmail.com", "wz@hkhongyi.net", "1668876708@qq.com"],
         "smtp_server": "smtp.mxhichina.com",
         "mail_pwd":  "Rdh11223344@"
     }

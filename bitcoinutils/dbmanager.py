@@ -47,7 +47,7 @@ class SqliteDatabaseManager(DatabaseManager, with_metaclass(FlyweightMeta)):
 
     def __init__(self, *dbs):
         super(SqliteDatabaseManager, self).__init__()
-        self.engine = create_engine('sqlite://', echo=False)
+        self.engine = create_engine('sqlite://', pool_size=20, pool_pre_ping=True, echo=False)
 
         self.attached_databases = dbs
 

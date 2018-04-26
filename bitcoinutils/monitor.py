@@ -379,7 +379,7 @@ class ExchangeDataMonitor(object):
     def print_pinned_snapshots(self):
         for item in self.pinned_snapshots:
             for sub in item:
-                print (item[sub])
+                print ("print_pinned_snapshots",item[sub])
 
     def monitor(self):
 
@@ -396,7 +396,7 @@ class ExchangeDataMonitor(object):
                 coin = res['instmt']
                 volume = float(res['trade_volume'])
                 price = float(res['trade_px'])
-                print(exch, coin, price, volume)
+                print("print recive from zmq", exch, coin, price, volume)
                 self.update_snapshot(exch, coin.lower(), price, volume)
                 self.print_pinned_snapshots()
                 over_threshold = self.check_price_difference(exch, coin)

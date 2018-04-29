@@ -12,6 +12,8 @@ if __name__ == '__main__':
                         help='Using MySql Database')
     parser.add_argument('--mysqluri', action='store',
                         help='Mysql Server URI.')
+    parser.add_argument('--sourcedb', action='store',
+                        help='Source data Database')    
     parser.add_argument('--targetdb', action='store',
                         help='Target Database to generator K Bar data')
     parser.add_argument('--sincedate', action='store',
@@ -20,8 +22,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     since_date = args.sincedate if hasattr(args, 'sincedate') else None
-
+    
+    source_db = MysqlDB(args.sourcedb, args.sourcedb)
     target_db = MysqlDB(args.targetdb, args.targetdb)
 
-    kb_gen = KBarGenerator(args.mysqluri, target_db, since_date)
+    kb_gen = KBarGenerator(args.mysqluri, source_db, target_db, since_date)
     kb_gen.kbar_generate()

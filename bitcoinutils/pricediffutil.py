@@ -79,9 +79,7 @@ class PriceDiffUtil(object):
         self.exchangerate_db = exchangerate_db
         self.source_db = source_db
         self.target_db = target_db
-        self.exchangerate_mgr = MysqlDatabaseManager(db_uri, exchangerate_db)
-        self.sourcedb_mgr = MysqlDatabaseManager(db_uri, source_db)
-        self.targetdb_mgr = MysqlDatabaseManager(db_uri, target_db)
+        self.db_mgr = MysqlDatabaseManager(db_uri, exchangerate_db, source_db, target_db)
 
         self.coin = coin
         self.first_instmt = first.lower()
@@ -97,14 +95,14 @@ class PriceDiffUtil(object):
 
         exchange_rate_table = 'exchange_rate'
 
-        if not self.exchangerate_mgr.is_table_existed(self.exchangerate_db,
+        if not self.db_mgr.is_table_existed(self.exchangerate_db,
                                             exchange_rate_table) :
             raise ValueError('No exchange rate table found')
 
         stmt = '''select * from {}.{} where date_time = '{}';
         '''.format(self.exchangerate_db.alias, exchange_rate_table, self.date)
 
-        res = self.exchangerate_mgr.session.execute(stmt)
+        res = self.db_mgr.session.execute(stmt)
         rates = [rate for rate in res]
         if not rates:
             raise ValueError('No record exchange rate for day {}'.format(self.date))
@@ -125,13 +123,13 @@ class PriceDiffUtil(object):
 
         stmt = '''create table if not exists {}.{}
         (timestamp varchar(25) primary key, price_diff decimal(20, 8), price_diff_percent decimal(20, 8));'''
-        if not self.targetdb_mgr.is_table_existed(self.target_db,
+        if not self.db_mgr.is_table_existed(self.target_db,
                                             self.price_diff_table):
-            self.targetdb_mgr.session.execute(stmt.format(self.target_db.alias, self.price_diff_table))
+            self.db_mgr.session.execute(stmt.format(self.target_db.alias, self.price_diff_table))
 
     def get_price_by_tick(self, instmt, coin, date, start_time, tick):
         table_name = None
-        tb_names = self.sourcedb_mgr.get_table_names_from_db(self.source_db)
+        tb_names = self.db_mgr.get_table_names_from_db(self.source_db)
 
         for tb in tb_names:
             m = re.search(r'exch_(.*)_(.*)_snapshot_(\d+)', tb)
@@ -148,7 +146,7 @@ class PriceDiffUtil(object):
         and trades_date_time < '{}' and update_type=2
         '''.format(table_name, s_time, d_time)
 
-        res = self.sourcedb_mgr.session.execute(stmt)
+        res = self.db_mgr.session.execute(stmt)
 
         prices = [px for px in res]
 
@@ -173,7 +171,7 @@ class PriceDiffUtil(object):
 
     def get_exact_coin_name(self, instmt, coin, date):
 
-        tb_names = self.sourcedb_mgr.get_table_names_from_db(self.source_db)
+        tb_names = self.db_mgr.get_table_names_from_db(self.source_db)
 
         for tb in tb_names:
             m = re.search(r'exch_(.*)_(.*)_snapshot_(\d+)', tb)
@@ -223,10 +221,10 @@ class PriceDiffUtil(object):
 
             try:
                 print(stmt)
-                self.sourcedb_mgr.session.execute(stmt)
-                self.sourcedb_mgr.session.commit()
+                self.db_mgr.session.execute(stmt)
+                self.db_mgr.session.commit()
             except Exception as e:
                 print(e)
-                self.sourcedb_mgr.session.rollback()
+                self.db_mgr.session.rollback()
 
             begin_time = end_time

@@ -44,8 +44,7 @@ class KBarGenerator(object):
 
     def __init__(self, mysql_uri, source_db, target_db, since_date):
 
-        self.sourcedb_mgr = MysqlDatabaseManager(mysql_uri, source_db)
-        self.targetdb_mgr = MysqlDatabaseManager(mysql_uri, target_db)
+        self.db_mgr = MysqlDatabaseManager(mysql_uri, source_db, target_db)
         self.source_db = source_db
         self.target_db = target_db
         if not since_date:
@@ -78,14 +77,14 @@ class KBarGenerator(object):
         '''
 
         try:
-            if not self.targetdb_mgr.is_table_existed(db, table_name.split('.')[1]):
+            if not self.db_mgr.is_table_existed(db, table_name.split('.')[1]):
                 print('Creating {} {} KBar with durance {}.'.format(instmt, coin, durance))
-                self.targetdb_mgr.session.execute(stmt.format(table_name))
-                self.targetdb_mgr.session.commit()
+                self.db_mgr.session.execute(stmt.format(table_name))
+                self.db_mgr.session.commit()
                 return table_name
         except Exception as e:
             print(e)
-            self.targetdb_mgr.session.rollback()
+            self.db_mgr.session.rollback()
 
 
     def create_last_kbar_data_table_if_not_exists(self, db):
@@ -106,10 +105,10 @@ class KBarGenerator(object):
         );
         '''
 
-        if not self.targetdb_mgr.is_table_existed(db, 'last_updated_kbar'):
+        if not self.db_mgr.is_table_existed(db, 'last_updated_kbar'):
             print('Creating Last Updated KBar Table')
-            self.targetdb_mgr.session.execute(stmt.format(table_name))
-            self.targetdb_mgr.session.commit()
+            self.db_mgr.session.execute(stmt.format(table_name))
+            self.db_mgr.session.commit()
 
     def get_last_kbar_item(self, db, instmt, coin, durance):
 
@@ -119,7 +118,7 @@ class KBarGenerator(object):
         and market='{}' and durance='{}';
         '''
 
-        res = self.targetdb_mgr.session.execute(stmt.format(table_name, instmt,
+        res = self.db_mgr.session.execute(stmt.format(table_name, instmt,
                                                       coin, durance))
         if res:
             kbar = res.fetchone()
@@ -137,10 +136,10 @@ class KBarGenerator(object):
         '''.format(table_name, instmt, coin, durance, open, high, low, close, volume )
 
         try:
-            self.targetdb_mgr.session.execute(stmt)
-            self.targetdb_mgr.session.commit()
+            self.db_mgr.session.execute(stmt)
+            self.db_mgr.session.commit()
         except Exception as e:
-            self.targetdb_mgr.session.fallback()
+            self.db_mgr.session.fallback()
 
     def kbar_generate_worker(self, instmt, coin, durance, timestamp):
 
@@ -179,7 +178,7 @@ class KBarGenerator(object):
             '''.format(data_table, begin_time.strftime('%Y%m%d %H:%M:%S.%f'),
                        end_time.strftime('%Y%m%d %H:%M:%S.%f'))
 
-            res = self.sourcedb_mgr.session.execute(stmt)
+            res = self.db_mgr.session.execute(stmt)
             items = [trade for trade in res]
             stmt = '''
             replace into {} (time_start, time_end, exchange, market, open, high , low, close, volume)
@@ -189,14 +188,14 @@ class KBarGenerator(object):
             try:
                 if not items:
 
-                    self.targetdb_mgr.session.execute(stmt.format(kbar_table,
+                    self.db_mgr.session.execute(stmt.format(kbar_table,
                                                             begin_time.strftime('%Y%m%d %H:%M:%S.%f'),
                                                             end_time.strftime('%Y%m%d %H:%M:%S.%f'),
                                                             instmt, coin,
                                                             last_trade.open, last_trade.high, last_trade.low,
                                                             last_trade.close, last_trade.volume
                                                             ))
-                    self.targetdb_mgr.session.commit()
+                    self.db_mgr.session.commit()
                 else:
                     open = items[0][0]
                     high = reduce(lambda x,y:  x if x> y else y , [ item[0] for item in items])
@@ -205,21 +204,21 @@ class KBarGenerator(object):
                     volume = sum([item[1] for item in items])
                     #self.update_last_kbar_item(db, instmt, coin, durance, open, high, low, close, volume)
                     last_trade = Trade(instmt, coin, open, high, low, close, volume)
-                    self.targetdb_mgr.session.execute(stmt.format(kbar_table,
+                    self.db_mgr.session.execute(stmt.format(kbar_table,
                                                             begin_time.strftime('%Y%m%d %H:%M:%S.%f'),
                                                             end_time.strftime('%Y%m%d %H:%M:%S.%f'),
                                                             instmt, coin,
                                                             open, high, low, close, volume))
 
-                    self.targetdb_mgr.session.commit()
+                    self.db_mgr.session.commit()
             except Exception as e:
                 print(e)
-                self.targetdb_mgr.session.rollback()
+                self.db_mgr.session.rollback()
 
             begin_time = end_time
 
     def kbar_generate(self):
-        tb_names = self.sourcedb_mgr.get_all_table_names()
+        tb_names = self.db_mgr.get_all_table_names()
         instmt_coin_table = {}
         self.create_last_kbar_data_table_if_not_exists(self.target_db)
         for tn in tb_names:

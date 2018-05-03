@@ -6,7 +6,7 @@ import re
 
 class MergeUtil(object):
 
-    def __init__(self, db_uri, from_db, to_db, zone_info, since_date=None):
+    def __init__(self, db_uri, from_db, to_db, zone_info, since_date=None, end_date=None):
         super(MergeUtil, self).__init__()
         self.db_uri = db_uri
         self.origin_db = from_db
@@ -17,6 +17,11 @@ class MergeUtil(object):
             self.since_date = (datetime.utcnow().date() - timedelta(2)).strftime('%Y%m%d')
         else:
             self.since_date = since_date
+            
+        if not end_date:
+            self.end_date = (datetime.utcnow().date() - timedelta(1)).strftime('%Y%m%d')
+        else:
+            self.end_date = end_date        
 
     def get_stored_instmt_and_coin(self):
         tb_names = self.db_mgr.get_table_names_from_db(self.origin_db)
@@ -82,8 +87,8 @@ class MergeUtil(object):
 
 class MysqlMergeUtil(MergeUtil):
 
-    def __init__(self, db_uri, from_db, to_db, zone_info , since_date=None):
-        super(MysqlMergeUtil, self).__init__(db_uri, from_db, to_db, zone_info, since_date)
+    def __init__(self, db_uri, from_db, to_db, zone_info , since_date=None, end_date=None):
+        super(MysqlMergeUtil, self).__init__(db_uri, from_db, to_db, zone_info, since_date, end_date)
         self.db_mgr = MysqlDatabaseManager(db_uri, from_db, to_db)
 
     def is_table_need_merge(self, instmt, coin, timestamp):
@@ -179,7 +184,7 @@ class MysqlMergeUtil(MergeUtil):
         for instmt in instmt_coin_table:
             for coin in instmt_coin_table[instmt]:
                 for timestamp in instmt_coin_table[instmt][coin]:
-                    if timestamp >= self.since_date:
+                    if timestamp >= self.since_date and timestamp <= self.end_date:
                         print('Merging data table: exch_{}_{}_{}'.format(instmt, coin, timestamp))
                         if not self.db_mgr.is_table_existed(self.target_db,
                                                             'exch_{}_{}_{}'.format(instmt, coin, timestamp)):

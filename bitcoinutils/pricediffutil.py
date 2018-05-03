@@ -116,7 +116,7 @@ class PriceDiffUtil(object):
 
 
     def create_price_diff_table(self):
-        self.price_diff_table = 'price_diff_{}_{}_{}_{}'.format(self.coin.lower(),
+        self.price_diff_table = 'exch_{}_{}_{}_pricediff_{}'.format(self.coin.lower(),
                                                                 self.first_instmt.lower(),
                                                                 self.second_instmt.lower(),
                                                                 self.date)

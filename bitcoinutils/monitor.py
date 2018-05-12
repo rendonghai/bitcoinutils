@@ -423,4 +423,3 @@ class ExchangeDataMonitor(object):
                     self.mail_notifier.send_notification(subject, content)
                 else:
                     pass
-                self.config.fetch_rules()

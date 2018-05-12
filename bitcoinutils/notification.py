@@ -20,7 +20,7 @@ class MailNotification(object):
         msg['From'] = self.me
         msg['To'] = ', '.join(self.recivers)
 
-        smtp_server = smtplib.SMTP(self.server)
+        smtp_server = smtplib.SMTP_SSL(self.server)
         try:
             smtp_server.login(self.me, self.pwd)
             smtp_server.sendmail(self.me, self.recivers, msg.as_string())
@@ -36,6 +36,6 @@ if __name__ == '__main__':
     #notifier = MailNotification('smtp.mxhichina.com' , 'notice@hkhongyi.net', 'Rdh11223344@', ['wxjeacen@gmail.com'])
     notifier.send_notification('This is a test', 'Test ok')
     import time
-    time.sleep(5)
+    time.sleep(50)
     notifier.send_notification('This is a second test', 'Test ok')
     pass

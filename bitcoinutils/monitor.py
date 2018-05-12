@@ -396,7 +396,6 @@ class ExchangeDataMonitor(object):
                 coin = res['instmt']
                 volume = float(res['trade_volume'])
                 price = float(res['trade_px'])
-                print("print recive from zmq", exch, coin, price, volume)
                 self.update_snapshot(exch, coin.lower(), price, volume)
                 self.print_pinned_snapshots()
                 over_threshold = self.check_price_difference(exch, coin)
@@ -421,5 +420,6 @@ class ExchangeDataMonitor(object):
                     print('Trigger Mail Notification')
                     print(subject, content)
                     self.mail_notifier.send_notification(subject, content)
+                    self.config.fetch_rules()
                 else:
                     pass

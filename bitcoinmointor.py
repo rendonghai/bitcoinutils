@@ -27,7 +27,7 @@ if __name__ == '__main__':
     #er = ExchangeRate()
     er = exchange_rate
     scheduler.add_job(er.update_exchage_rate, 'interval', hours=12)
-    scheduler.add_job(monitor.config.fetch_rules, 'interval', minutes=5)
+    scheduler.add_job(monitor.update_task, 'interval', minutes=1)
 
     thread1 = threading.Thread(target=scheduler.start)
     thread2 = threading.Thread(target=monitor.monitor)

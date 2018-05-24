@@ -318,6 +318,19 @@ class ExchangeDataMonitor(object):
         self.pinned_snapshots = []
 
         print ('init rule content')
+        self.update_snapshots_item()
+        context = zmq.Context()
+        self.sock = context.socket(zmq.SUB)
+        self.sock.connect(self.feed_uri)
+        self.sock.setsockopt_string(zmq.SUBSCRIBE, '')
+        
+    def find_key_in_pinned_snapshots(self, key):
+        for item in self.pinned_snapshots:
+            if key in item:
+                return True
+        return False
+    
+    def update_snapshots_item(self):
         for rule in self.config.rules.values():
             item = {}
             exch1 = rule[0]
@@ -328,11 +341,10 @@ class ExchangeDataMonitor(object):
             snap2 = BCEXSnapshot(exchange=exch2, currency=currency)
             item1 = {(exch1, currency): snap1}
             item2 = {(exch2, currency): snap2}
-            self.pinned_snapshots.extend([item1, item2])
-        context = zmq.Context()
-        self.sock = context.socket(zmq.SUB)
-        self.sock.connect(self.feed_uri)
-        self.sock.setsockopt_string(zmq.SUBSCRIBE, '')
+            if not self.find_key_in_pinned_snapshots((exch1, currency)):
+                self.pinned_snapshots.append(item1)  
+            if not self.find_key_in_pinned_snapshots((exch2, currency)):
+                self.pinned_snapshots.append(item2)               
 
     def update_snapshot(self, exchange, coin, price, volume):
 
@@ -341,6 +353,11 @@ class ExchangeDataMonitor(object):
                 if item[1] in coin and (exchange, item[1]) in snap:
                     snap[(exchange, item[1])].update_snapshot(price, volume)
 
+    def update_task(self):
+        self.config.fetch_rules()
+        self.update_snapshots_item()
+        self.print_pinned_snapshots()
+        
     def check_price_difference(self, exchange, coin_code):
 
         over_threshold_data = []
@@ -430,6 +447,6 @@ class ExchangeDataMonitor(object):
                     print('Trigger Mail Notification')
                     print(subject, content)
                     self.mail_notifier.send_notification(subject, content)
-                    self.config.fetch_rules()
+                    self.update_task()
                 else:
                     pass

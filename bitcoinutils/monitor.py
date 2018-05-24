@@ -397,7 +397,7 @@ class ExchangeDataMonitor(object):
                 volume = float(res['trade_volume'])
                 price = float(res['trade_px'])
                 self.update_snapshot(exch, coin.lower(), price, volume)
-                self.print_pinned_snapshots()
+                #self.print_pinned_snapshots()
                 over_threshold = self.check_price_difference(exch, coin)
                 if over_threshold:
                     for item in over_threshold:

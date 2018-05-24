@@ -114,14 +114,7 @@ class ExchangeRate(with_metaclass(FlyweightMeta)):
                 if not self.config:
                     raise ValueError
 
-                date = datetime.utcnow().date().strftime("%Y%m%d")
-                stmt = '''replace into {}.{} (date_time, cny, jpy, eur, krw)
-                values ('{}', {}, {}, {}, {});
-                '''.format(self.config.mysql_db.alias,
-                           self.exchange_rate_table_name, date,
-                           self.cny, self.jpy, self.eur, self.krw)
-                self.config.db_mgr.session.execute(stmt)
-                self.config.db_mgr.session.commit()
+                self.config.safe_exchage_rate(self.config.mysql_db.alias, self.exchange_rate_table_name, self.cny, self.jpy, self.eur, self.krw)
             except Exception as e:
                 print(e)
             finally:
@@ -282,6 +275,24 @@ class MonitorConfig(with_metaclass(FlyweightMeta)):
             print(e)
         finally:
             self.lock.release()
+            
+    def safe_exchage_rate(self, dbalias, tablename, cny, jpy, eur, krw):
+        date = datetime.utcnow().date().strftime("%Y%m%d")
+        stmt = '''replace into {}.{} (date_time, cny, jpy, eur, krw)
+        values ('{}', {}, {}, {}, {});
+        '''.format(dbalias,
+                   tablename, date,
+                   cny, jpy, eur, krw)
+        
+        try:
+            self.lock.acquire()
+            self.db_mgr.session.execute(stmt)
+            self.db_mgr.session.commit()   
+        except Exception as e:
+            print(e)
+        finally:
+            self.lock.release()
+    
 
 
 class ExchangeDataMonitor(object):
@@ -299,7 +310,6 @@ class ExchangeDataMonitor(object):
                                                mail_config['mail_pwd'],
                                                mail_config['receivers'])
 
-        #er = ExchangeRate()
         er = exchange_rate
         er.set_config(self.config)
         er.initialize_exchange_rate_table()

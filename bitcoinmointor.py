@@ -26,7 +26,7 @@ if __name__ == '__main__':
     scheduler = BlockingScheduler()
     #er = ExchangeRate()
     er = exchange_rate
-    scheduler.add_job(er.update_exchage_rate, 'interval', hours=12)
+    scheduler.add_job(er.update_exchage_rate, 'interval', hours=2)
     scheduler.add_job(monitor.update_task, 'interval', minutes=1)
 
     thread1 = threading.Thread(target=scheduler.start)

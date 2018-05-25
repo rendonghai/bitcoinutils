@@ -59,13 +59,14 @@ class ExchangeFactory(with_metaclass(FlyweightMeta)):
 
 class ExchangeRate(with_metaclass(FlyweightMeta)):
 
-    fixer_uri = 'http://api.fixer.io/latest?base=USD&symbols=CNY,JPY,HKD,EUR,KRW'
+    aliyun_uri = 'http://jisuhuilv.market.alicloudapi.com/exchange/single?currency='
 
     supported_currency = ['CNY', 'JPY', 'HKD', 'EUR', 'KRW']
 
     def __init__(self):
         super(ExchangeRate, self).__init__()
-        self.base = 'usd'
+        self.AppCode = '4a6b2d8ebc494dd6808d78919cfb5018'
+        self.base = 'USD'
         self.usd = 1.0
         self.usdt = 1.0
         self.cny = None
@@ -106,10 +107,16 @@ class ExchangeRate(with_metaclass(FlyweightMeta)):
         with requests.Session() as sess:
             try:
                 self.lock.acquire()
-                res = sess.get(self.fixer_uri).json()
-
+                headers = {'content-type': 'application/json', 'Authorization': 'APPCODE ' + self.AppCode}
+                res = sess.get(self.aliyun_uri + self.base, headers=headers).json()
+                
+                if not res['status'] == '0' and not res['msg'] == 'ok' and not res['result']['currency'] == self.base:
+                    raise ValueError
+                
+                rateslist = res['result']['list']
                 for item in ExchangeRate.supported_currency:
-                    setattr(self, item.lower(), res['rates'][item])
+                    if item in rateslist:
+                        setattr(self, item.lower(), rateslist[item]['rate'])
 
                 if not self.config:
                     raise ValueError

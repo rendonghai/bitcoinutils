@@ -149,7 +149,7 @@ class BCEXSnapshot(object):
                 return price / float(getattr(er, base_currency))
 
     def update_snapshot(self, price, volume):
-        print('update pinned snapshot')
+        #print('update pinned snapshot')
         self.volume = volume
         self.price = self.consistent_currency_by_usd(price)
 
@@ -369,7 +369,7 @@ class ExchangeDataMonitor(object):
             coin = rule[2]
             price_gap_threshold = rule[3]
             direction = rule[4]
-            print(exch1, exch2, coin, price_gap_threshold)
+            #print(exch1, exch2, coin, price_gap_threshold)
             price1 = 0
             price2 = 0
             for item in self.pinned_snapshots:
@@ -382,14 +382,14 @@ class ExchangeDataMonitor(object):
                coin.lower() in coin_code.lower():
                 price_diff = price1 - price2
                 price_diff_percent = price_diff / min(price1, price2) * 100.0
-                print('F'*100)
-                print('Hit rule {}'.format(key))
-                print(price_diff, price_diff_percent)
+                #print('F'*100)
+                #print('Hit rule {}'.format(key))
+                #print(price_diff, price_diff_percent)
                 if key not in self.rule_hit_map:
                     self.rule_hit_map[key] = 0
-                print('Checking rule:{}'.format(key))
-                print(self.config.rules[key])
-                print('Hit count {}'.format(self.rule_hit_map[key]))
+                #print('Checking rule:{}'.format(key))
+                #print(self.config.rules[key])
+                #print('Hit count {}'.format(self.rule_hit_map[key]))
                 if direction.lower() == 'up' and price_diff_percent >= price_gap_threshold or \
                    direction.lower() == 'down' and price_diff_percent < price_gap_threshold:
                     #self.config.rules[key][-1] += 1
@@ -398,7 +398,7 @@ class ExchangeDataMonitor(object):
                         over_threshold_data.append((key, exch1, exch2, coin, price1, price2, price_diff, price_diff_percent))
                         self.rule_hit_map[key] = 0
                 else:
-                    print('Unset hit count in rule {}'.format(key))
+                    #print('Unset hit count in rule {}'.format(key))
                     self.rule_hit_map[key] = 0
 
         return over_threshold_data

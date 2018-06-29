@@ -446,7 +446,7 @@ class ExchangeDataMonitor(object):
                     for item in over_threshold:
                         #content += str(item)
                         #content += '\n'
-                        content += u'''货币: {}\n交易所1: {}\t{}\n交易所2: {}\t{}\n交易差价: {}\t{}%\n'''.format(item[3],
+                        content += u'''货币: {}\n交易所1: {}\t{}\n交易所2: {}\t{}\n交易差价: {}\n交易差价比例{}%\n'''.format(item[3],
                                    item[1], round(item[4],2),
                                    item[2], round(item[5],2),
                                    round(item[6],2), round(item[7],2)

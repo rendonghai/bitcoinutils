@@ -405,7 +405,8 @@ class ExchangeDataMonitor(object):
                    direction.lower() == 'down' and price_diff_percent < price_gap_threshold:
                     #self.config.rules[key][-1] += 1
                     self.rule_hit_map[key] += 1
-                    if self.rule_hit_map[key] >= self.hit_times and (datetime.now() - self.rule_lastmail_sendtime[key]).minutes >= self.sendmail_interval:
+                    if self.rule_hit_map[key] >= self.hit_times and \
+                       (datetime.now() - self.rule_lastmail_sendtime[key]).total_seconds()/60 >= self.sendmail_interval:
                         over_threshold_data.append((key, exch1, exch2, coin, price1, price2, price_diff, price_diff_percent))
                         self.rule_hit_map[key] = 0
                         self.rule_lastmail_sendtime[key] = datetime.now()

@@ -19,10 +19,12 @@ if __name__ == '__main__':
                         help='Mysql Database name')
     parser.add_argument('--hittimes', action='store',
                         help='Max rule hit times')
+    parser.add_argument('--sendmailinterval', action='store',
+                        help='sendmail interval')    
 
     args = parser.parse_args()
 
-    monitor = ExchangeDataMonitor(args.zmqsrc, args.mysqluri, args.mysqldb, args.config, int(args.hittimes))
+    monitor = ExchangeDataMonitor(args.zmqsrc, args.mysqluri, args.mysqldb, args.config, int(args.hittimes), int(args.sendmailinterval))
     scheduler = BlockingScheduler()
     #er = ExchangeRate()
     er = exchange_rate

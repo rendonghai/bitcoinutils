@@ -304,12 +304,14 @@ class MonitorConfig(with_metaclass(FlyweightMeta)):
 
 class ExchangeDataMonitor(object):
 
-    def __init__(self, feed_uri, mysql_uri, mysql_db, config_file, hit_times):
+    def __init__(self, feed_uri, mysql_uri, mysql_db, config_file, hit_times, sendmail_interval):
         self.feed_uri = feed_uri
         self.config = MonitorConfig()
         self.config.load_config(mysql_uri, mysql_db, config_file)
         self.hit_times = hit_times
+        self.sendmail_interval = sendmail_interval
         self.rule_hit_map = {}
+        self.rule_lastmail_sendtime = {}
         mail_config = self.config.mail_config
 
         self.mail_notifier =  MailNotification(mail_config['smtp_server'],
@@ -394,6 +396,8 @@ class ExchangeDataMonitor(object):
                 #print(price_diff, price_diff_percent)
                 if key not in self.rule_hit_map:
                     self.rule_hit_map[key] = 0
+                if key not in self.rule_lastmail_sendtime:
+                    self.rule_lastmail_sendtime[key] = datetime.now()                
                 #print('Checking rule:{}'.format(key))
                 #print(self.config.rules[key])
                 #print('Hit count {}'.format(self.rule_hit_map[key]))
@@ -401,9 +405,10 @@ class ExchangeDataMonitor(object):
                    direction.lower() == 'down' and price_diff_percent < price_gap_threshold:
                     #self.config.rules[key][-1] += 1
                     self.rule_hit_map[key] += 1
-                    if self.rule_hit_map[key] >= self.hit_times:
+                    if self.rule_hit_map[key] >= self.hit_times and (datetime.now() - self.rule_lastmail_sendtime[key]).minutes >= self.sendmail_interval:
                         over_threshold_data.append((key, exch1, exch2, coin, price1, price2, price_diff, price_diff_percent))
                         self.rule_hit_map[key] = 0
+                        self.rule_lastmail_sendtime[key] = datetime.now()
                 else:
                     #print('Unset hit count in rule {}'.format(key))
                     self.rule_hit_map[key] = 0
@@ -436,7 +441,7 @@ class ExchangeDataMonitor(object):
                 if over_threshold:
                     for item in over_threshold:
                         key = item[0]
-                        self.config.deactive_rule(key)
+#                        self.config.deactive_rule(key)
                         ids = self.config.get_succeeded_rule_ids(key)
                         if ids:
                             for sk in ids:

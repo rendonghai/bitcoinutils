@@ -59,7 +59,7 @@ class ExchangeFactory(with_metaclass(FlyweightMeta)):
 
 class ExchangeRate(with_metaclass(FlyweightMeta)):
 
-    aliyun_uri = 'http://jisuhuilv.market.alicloudapi.com/exchange/single?currency='
+    aliyun_uri = 'http://ali-waihui.showapi.com/waihui-transform?fromCode='
 
     supported_currency = ['CNY', 'JPY', 'HKD', 'EUR', 'KRW']
 
@@ -69,11 +69,11 @@ class ExchangeRate(with_metaclass(FlyweightMeta)):
         self.base = 'USD'
         self.usd = 1.0
         self.usdt = 1.0
-        self.cny = None
-        self.jpy = None
-        self.hkd = None
-        self.eur = None
-        self.krw = None
+        self.cny = 0.0
+        self.jpy = 0.0
+        self.hkd = 0.0
+        self.eur = 0.0
+        self.krw = 0.0
 
         self.config = None
         self.lock = threading.Lock()
@@ -108,15 +108,14 @@ class ExchangeRate(with_metaclass(FlyweightMeta)):
             try:
                 self.lock.acquire()
                 headers = {'content-type': 'application/json', 'Authorization': 'APPCODE ' + self.AppCode}
-                res = sess.get(self.aliyun_uri + self.base, headers=headers).json()
                 
-                if not res['status'] == '0' and not res['msg'] == 'ok' and not res['result']['currency'] == self.base:
-                    raise ValueError
-                
-                rateslist = res['result']['list']
                 for item in ExchangeRate.supported_currency:
-                    if item in rateslist:
-                        setattr(self, item.lower(), rateslist[item]['rate'])
+                    res = sess.get(self.aliyun_uri + self.base + '&money=1' + '&toCode=' + item, headers=headers).json()
+                    
+                    if not res and not res['showapi_res_body']['ret_code'] == '0':
+                        raise ValueError
+                    
+                    setattr(self, item.lower(), res['showapi_res_body']['money'])
 
                 if not self.config:
                     raise ValueError

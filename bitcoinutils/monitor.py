@@ -112,7 +112,7 @@ class ExchangeRate(with_metaclass(FlyweightMeta)):
                 for item in ExchangeRate.supported_currency:
                     res = sess.get(self.aliyun_uri + self.base + '&money=1' + '&toCode=' + item, headers=headers).json()
                     
-                    if not res and not res['showapi_res_body']['ret_code'] == '0':
+                    if not res and not res['showapi_res_code'] == '0':
                         raise ValueError
                     
                     setattr(self, item.lower(), res['showapi_res_body']['money'])

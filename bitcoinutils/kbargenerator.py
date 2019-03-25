@@ -222,7 +222,7 @@ class KBarGenerator(object):
         instmt_coin_table = {}
         self.create_last_kbar_data_table_if_not_exists(self.target_db)
         for tn in tb_names:
-            r = re.search(r'.*.(\w+)_(\w+)_order_(\d{4}_\d{2}_\d{2})', tn)
+            r = re.search(r'bcex.(\w+)_(\w+)_order_(\d{4}_\d{2}_\d{2})', tn)
             if r:
                 if r.group(1) not in instmt_coin_table:
                     instmt_coin_table[r.group(1)] = {r.group(2): [r.group(3)]}

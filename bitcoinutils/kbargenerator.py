@@ -19,16 +19,16 @@ class Trade(object):
 
 class KBarDurance(object):
 
-    kbar_durance_map = {'1min': 1,
-                        '3min': 3,
-                        '5min': 5,
-                        '15min': 15,
-                        '30min': 30,
-                        '1hour': 60,
-                        '2hours': 120,
-                        '6hours': 360,
-                        '12hours': 720,
-                        '1day': 1440
+    kbar_durance_map = {'1min': 1
+                        #'3min': 3,
+                        #'5min': 5,
+                        #'15min': 15,
+                        #'30min': 30,
+                        #'1hour': 60,
+                        #'2hours': 120,
+                        #'6hours': 360,
+                        #'12hours': 720,
+                        #'1day': 1440
     }
 
     def __init__(self, durance):
@@ -145,15 +145,15 @@ class KBarGenerator(object):
 
         kbar_durance = KBarDurance(durance)
 
-        data_table = '{}.exch_{}_{}_snapshot_{}'.format(self.source_db.alias, instmt, coin, timestamp)
+        data_table = '{}.{}_{}_order_{}'.format(self.source_db.alias, instmt, coin, timestamp)
 
         if kbar_durance.is_need_create_new_table:
             kbar_table = '{}.exch_{}_{}_{}_kbar_{}'.format(self.target_db.alias, instmt, coin, durance, timestamp)
         else:
             kbar_table = '{}.exch_{}_{}_{}_kbar'.format(self.target_db.alias, instmt, coin, durance)
 
-        current_date = datetime.strptime(timestamp, '%Y%m%d').date()
-        begin_time = datetime.strptime(timestamp, '%Y%m%d')
+        current_date = datetime.strptime(timestamp, '%Y_%m_%d').date()
+        begin_time = datetime.strptime(timestamp, '%Y_%m_%d')
 
         last_kbar_item = self.get_last_kbar_item(self.target_db, instmt, coin, durance)
 
@@ -172,9 +172,9 @@ class KBarGenerator(object):
             end_time = begin_time + kbar_durance.interval
 
             stmt = '''
-            select trade_px, trade_volume, trades_date_time from {}
-            where update_type=2 and trades_date_time >= '{}' and trades_date_time < '{}'
-            order by trades_date_time;
+            select t, tq, date_time from {}
+            where update_type=2 and date_time >= '{}' and date_time < '{}'
+            order by date_time;
             '''.format(data_table, begin_time.strftime('%Y%m%d %H:%M:%S.%f'),
                        end_time.strftime('%Y%m%d %H:%M:%S.%f'))
 
@@ -222,7 +222,7 @@ class KBarGenerator(object):
         instmt_coin_table = {}
         self.create_last_kbar_data_table_if_not_exists(self.target_db)
         for tn in tb_names:
-            r = re.search(r'.*.exch_([a-z]+)_(.*)_snapshot_(\d+)', tn)
+            r = re.search(r'.*.(\w+)_(\w+)_order_(\d{4}_\d{2}_\d{2})', tn)
             if r:
                 if r.group(1) not in instmt_coin_table:
                     instmt_coin_table[r.group(1)] = {r.group(2): [r.group(3)]}
